@@ -1,5 +1,6 @@
 using HotelListing.API.Commos.Configurations;
 using HotelListing.API.Data;
+using HotelListing.API.Handlers.HealthCheck;
 using HotelListing.API.Handlers.Middleware;
 using HotelListing.API.Handlers.Security;
 using HotelListing.API.Handlers.Security.Data;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -62,7 +64,7 @@ builder.Services.AddSwaggerGen(
         {
             Description = "@JWT Authorization header using the Bearer Scheme." +
             "Enter 'Bearer [space] and then your token in the text input below." +
-            "Example = 'Bearer 123456abcdefg'",
+            "Example = 'Bearer eyJhbGciOiJIUzI1'",
             Name = "Authorization",
             In = ParameterLocation.Header,
             Type = SecuritySchemeType.ApiKey,
@@ -176,9 +178,15 @@ builder.Services.AddResponseCaching(
     } );
 
 
+//Health CHECK ***************************************************************************
+
+builder.Services.AddHealthChecks()
+    .AddCheck<CustomHeatlCheck>("my healtchekuitor")
+    .AddSqlServer(builder.Configuration.GetConnectionString("HotelConnectionString"))
+    .AddDbContextCheck<HotelListingDBContext>();
+    
+
 //****************************************************************************
-
-
 
 builder.Services.AddControllers().AddOData(
     options =>
@@ -194,7 +202,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.MapHealthChecks("/Quiere_Piopio");
+
 app.UseMiddleware<ExceptionMiddleware>();
+
+
 app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
